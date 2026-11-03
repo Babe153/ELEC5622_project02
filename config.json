@@ -1,0 +1,33 @@
+{
+  "data_dir": "datasets",
+  "labels_csv": "gt_training.csv",
+  "weights_dir": "weights",
+  "results_dir": "results",
+  "models": [
+    "alexnet",
+    "resnet34"
+  ],
+  "strategies": [
+    "partial",
+    "full"
+  ],
+  "learning_rates": [
+    0.01,
+    0.001,
+    0.0001
+  ],
+  "epochs": 30,
+  "batch_size": 16,
+  "num_workers": 2,
+  "seed": 42,
+  "momentum": 0.9,
+  "weight_decay": 0.0005,
+  "image_size": 224,
+  "rotation_degrees": 180,
+  "mixed_precision": true,
+  "expected_counts": {
+    "training": 8701,
+    "validation": 2175,
+    "test": 2720
+  }
+}

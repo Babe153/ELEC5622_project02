@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+weights/*.pth
+weights/*.part
+results/
+.venv/
+Three Datasets for Training, Validation and Test/
+
+datasets/
+gt_training.csv
+*.pdf
+local_environment.json
+check_report.json
+.env
+.env.*
