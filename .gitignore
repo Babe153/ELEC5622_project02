@@ -7,5 +7,4 @@ datasets/
 weights/*.pth
 weights/*.part
 results/
-environment/local.json
 references/*.pdf

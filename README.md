@@ -10,7 +10,6 @@ project2/
 ├── README.md                 # 中文说明
 ├── config.json               # 实验设置
 ├── train.py                  # 检查、训练、测试
-├── run.ps1                   # Windows 启动入口
 ├── requirements.txt          # Python 依赖
 ├── .gitignore
 ├── datasets/                 # 本地数据，不上传 GitHub
@@ -24,9 +23,6 @@ project2/
 │   └── manifest.json
 ├── scripts/
 │   └── download_weights.py
-├── environment/
-│   ├── local.json            # 本机 Python 路径，不上传 GitHub
-│   └── example.json          # 可复制的配置模板
 ├── references/
 │   └── Hep2_cell_classification_IEEE_JBHI.pdf
 └── results/                  # 自动生成，不上传 GitHub
@@ -34,7 +30,7 @@ project2/
     └── <实验名称>/           # 开始训练后才生成
 ```
 
-GitHub 不包含图片、标签 CSV、权重二进制、论文 PDF、运行结果和本机环境配置。
+GitHub 不包含图片、标签 CSV、权重二进制、论文 PDF和运行结果。
 克隆后将老师的数据按上述结构放入 datasets，再下载权重即可。
 `.git` 是本地版本历史，`__pycache__` 是 Python 自动缓存，图中省略。
 
@@ -46,7 +42,6 @@ GitHub 不包含图片、标签 CSV、权重二进制、论文 PDF、运行结�
 - `train.py`：检查、训练调参、最终测试三个独立命令。
 - `config.json`：实验方案，标签路径为 `datasets/gt_training.csv`。
 - `scripts/download_weights.py`：下载脚本，始终把权重保存到项目根目录的 `weights/`。
-- `run.ps1`：调用之前安装好的 GPU 环境，默认只执行检查。
 
 官方说明：
 - https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.alexnet.html
@@ -81,18 +76,20 @@ GitHub 不包含图片、标签 CSV、权重二进制、论文 PDF、运行结�
 
 ## 如何运行
 
-在 project2 文件夹打开 PowerShell。以下命令只是说明，准备代码时没有执行训练命令。
+在 project2 文件夹打开终端，并选择已安装 requirements.txt 中依赖的 Python 环境。下面的 `python` 必须指向该环境；在 IDE 中也需要选择对应解释器。以下命令只是说明，准备代码时没有执行训练命令。
+
+`train.py` 是唯一运行入口，必须指定 `check`、`train` 或 `test` 子命令。只执行 `python train.py` 会显示参数错误，不会开始训练。
 
 检查（不会更新参数，也不预测测试集）：
 
 ```powershell
-.\run.ps1 -Action check
+python train.py check
 ```
 
 **确认要开始正式训练后**，运行 12 次实验：
 
 ```powershell
-.\run.ps1 -Action train -Experiment baseline_30epochs
+python train.py train --experiment baseline_30epochs
 ```
 
 训练会打印每轮训练/验证准确率和耗时。已有同名实验目录时拒绝覆盖。若中断，已有日志和最佳权重保留，但本版本不支持精确断点续训；重新训练需要使用新的实验名称。
@@ -100,13 +97,13 @@ GitHub 不包含图片、标签 CSV、权重二进制、论文 PDF、运行结�
 如果想先运行某一种配置，复制 config.json 为 pilot.json，缩小 models、strategies 或 learning_rates 数组，然后：
 
 ```powershell
-.\run.ps1 -Action train -Config .\pilot.json -Experiment pilot
+python train.py train --config pilot.json --experiment pilot
 ```
 
 12 次训练全部结束、确认不再调参后，手动评估测试集：
 
 ```powershell
-.\run.ps1 -Action test -Experiment baseline_30epochs
+python train.py test --run-dir results/baseline_30epochs
 ```
 
 测试命令只使用验证集选中的四个模型，不会测试其余学习率模型。成功生成 test_results.json 后拒绝重复测试，避免误把测试集用作调参工具。
@@ -138,20 +135,23 @@ GitHub 不包含图片、标签 CSV、权重二进制、论文 PDF、运行结�
 
 ## 环境和空间
 
-`run.ps1` 优先使用 `environment/local.json` 中指定的 GPU Python 环境；该文件不存在时使用项目内的 `.venv/Scripts/python.exe`，不会自动安装或自动训练。不要删除该环境；若以后移动目录或换电脑，需要更新路径。也可以在自己的 GPU 环境直接运行 `python train.py check/train/test`。
+项目不保存 Python 解释器的本机路径。Python 环境由终端或 IDE 选择。删除启动脚本和路径配置不会卸载此前安装的环境，也不会自动让系统默认的 `python` 具备 PyTorch。
 
-重新安装的示例（当前无需执行）：
+如果已有兼容的 GPU Python 环境，选择它后直接执行上面的命令即可。若需要新建项目环境，可以在项目根目录执行（本次整理没有执行安装）：
 
 ```powershell
 py -3.10 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-如果使用上面的 `.venv`，不需要本机配置文件。若使用其他 Python 环境，将 `environment/example.json` 复制为 `environment/local.json`，再将其中的 python 指向所选环境的 Python 可执行文件完整路径。下载脚本可用 `python scripts/download_weights.py` 单独补齐官方权重。新建 `.venv` 后也可以直接运行：
+不必激活环境，也可以直接指定 Python 来执行脚本：
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/download_weights.py
+.\.venv\Scripts\python.exe train.py check
 ```
+
+若使用已选择的环境，权重下载命令为 `python scripts/download_weights.py`。可用 `python -c "import sys; print(sys.executable)"` 查看当前 Python 位置，用 `python -c "import torch; print(torch.cuda.is_available())"` 确认 CUDA 可用。GPU 模式是默认设置；不会静默切换为 CPU。
 
 脚本与配置中的数据、权重、结果路径以项目根目录为基准，不依赖当前终端所在目录。
 
