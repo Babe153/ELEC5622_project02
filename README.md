@@ -10,6 +10,7 @@ project2/
 ├── README.md                 # 中文说明
 ├── config.json               # 实验设置
 ├── train.py                  # 检查、训练、测试
+├── run.ps1                   # PowerShell 启动入口，默认只检查
 ├── requirements.txt          # Python 依赖
 ├── .gitignore
 ├── datasets/                 # 本地数据，不上传 GitHub
@@ -76,9 +77,27 @@ GitHub 不包含图片、标签 CSV、权重二进制、论文 PDF和运行结�
 
 ## 如何运行
 
+### PowerShell 启动脚本
+
+在项目目录打开 PowerShell，使用以下命令。单独运行 `./run.ps1` 默认只检查，只有指定 `-Action train` 才启动训练。
+
+```powershell
+.\run.ps1 -Action check
+# 准备好后再开始训练：
+.\run.ps1 -Action train
+# 所有验证集调参结束后再测试：
+.\run.ps1 -Action test
+```
+
+可用 `-Experiment 实验名称`、`-Config 配置文件路径`、`-RunDir 结果目录` 指定实验参数。启动器按顺序选择 Python：`-PythonExe` 参数、`PROJECT02_PYTHON` 环境变量、项目 `.venv`、此前已安装的本机 GPU 环境、系统 `python`。脚本含现有本机环境的回退路径，其他电脑可使用 `.venv` 或显式指定 Python。不会创建 environment 文件夹，也不会自动安装依赖。
+
+训练窗口需保持打开。已有同名实验目录时程序拒绝覆盖；当前代码不支持精确断点续训。测试不会在训练结束后自动执行。
+
+### 直接使用 Python 命令
+
 在 project2 文件夹打开终端，并选择已安装 requirements.txt 中依赖的 Python 环境。下面的 `python` 必须指向该环境；在 IDE 中也需要选择对应解释器。以下命令只是说明，准备代码时没有执行训练命令。
 
-`train.py` 是唯一运行入口，必须指定 `check`、`train` 或 `test` 子命令。只执行 `python train.py` 会显示参数错误，不会开始训练。
+`train.py` 是核心执行入口，必须指定 `check`、`train` 或 `test` 子命令。只执行 `python train.py` 会显示参数错误，不会开始训练。
 
 检查（不会更新参数，也不预测测试集）：
 
@@ -135,7 +154,7 @@ python train.py test --run-dir results/baseline_30epochs
 
 ## 环境和空间
 
-项目不保存 Python 解释器的本机路径。Python 环境由终端或 IDE 选择。删除启动脚本和路径配置不会卸载此前安装的环境，也不会自动让系统默认的 `python` 具备 PyTorch。
+直接运行 Python 时，环境由终端或 IDE 选择。PowerShell 启动脚本包含本机现有 GPU 环境的回退位置，也支持项目 `.venv`。启动器不会自动让系统默认的 `python` 具备 PyTorch。
 
 如果已有兼容的 GPU Python 环境，选择它后直接执行上面的命令即可。若需要新建项目环境，可以在项目根目录执行（本次整理没有执行安装）：
 
