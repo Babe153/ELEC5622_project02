@@ -1,6 +1,6 @@
 {
   "data_dir": "datasets",
-  "labels_csv": "gt_training.csv",
+  "labels_csv": "datasets/gt_training.csv",
   "weights_dir": "weights",
   "results_dir": "results",
   "models": [

@@ -5,7 +5,7 @@ import os
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 ITEMS = [("alexnet", "alexnet-owt-7be5be79.pth", "7be5be79"),
          ("resnet34", "resnet34-b627a593.pth", "b627a593")]
 

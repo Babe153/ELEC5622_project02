@@ -266,7 +266,7 @@ def check(cfg, device):
               "optimizer_steps": 0, "test_predictions": 0, "environment": environment(device),
               "classes": classes, "counts": {s: len(f) for s, f in splits.items()},
               "weights": hashes, "configurations": checks}
-    write_json(ROOT / "check_report.json", report)
+    write_json(resolve(cfg, "results_dir") / "check_report.json", report)
     print("CHECK PASSED. No optimizer steps or test predictions performed.", flush=True)
 
 

@@ -1,15 +1,11 @@
 __pycache__/
 *.pyc
+.venv/
+.env
+.env.*
+datasets/
 weights/*.pth
 weights/*.part
 results/
-.venv/
-Three Datasets for Training, Validation and Test/
-
-datasets/
-gt_training.csv
-*.pdf
-local_environment.json
-check_report.json
-.env
-.env.*
+environment/local.json
+references/*.pdf

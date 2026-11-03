@@ -5,7 +5,7 @@
     [string]$RunDir = ''
 )
 $ErrorActionPreference = 'Stop'
-$settingsPath = Join-Path $PSScriptRoot 'local_environment.json'
+$settingsPath = Join-Path $PSScriptRoot 'environment/local.json'
 if (Test-Path -LiteralPath $settingsPath) {
     $localSettings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
     $pythonExe = $localSettings.python
@@ -13,7 +13,7 @@ if (Test-Path -LiteralPath $settingsPath) {
     $pythonExe = Join-Path $PSScriptRoot '.venv/Scripts/python.exe'
 }
 if (-not (Test-Path -LiteralPath $pythonExe)) {
-    throw 'Python environment missing. See README_中文.md to install dependencies and update local_environment.json.'
+    throw 'Python environment missing. See README.md to install dependencies and update environment/local.json.'
 }
 if (-not $Config) { $Config = Join-Path $PSScriptRoot 'config.json' }
 $arguments = @((Join-Path $PSScriptRoot 'train.py'), $Action, '--config', $Config)
