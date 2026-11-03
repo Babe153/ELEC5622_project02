@@ -5,6 +5,11 @@
     "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
   },
   {
+    "path": "CODEX_REPORT_TASK.md",
+    "bytes": 9393,
+    "sha256": "668b21da0818b3d1d7c354175243fe80b87694cf7d1091068e2a37f9a7251e63"
+  },
+  {
     "path": "experiments/baseline_30epochs/alexnet_full/lr_0.0001_history.csv",
     "bytes": 3826,
     "sha256": "9a98f1ec15e7bb807d766c54d696908c9f727f2c79ec0a3c0ef2bfd19395296c"
@@ -456,13 +461,13 @@
   },
   {
     "path": "README.md",
-    "bytes": 1804,
-    "sha256": "139f405473ca518d243cb22cd8ced3de974bf62a5977cc06be0a7570f60d3caa"
+    "bytes": 1524,
+    "sha256": "a423ad129eae297403a2335ac2c3f6e9174cf1bacc5ba0b2eb4f17b8b506d18b"
   },
   {
     "path": "REPORT_OUTLINE_ZH.md",
-    "bytes": 21942,
-    "sha256": "8a14f4d0a220c4c0d364f565627eab6fad8a902582cd7f65c743d0e85b706ebe"
+    "bytes": 20549,
+    "sha256": "55547d824180311d08fb90643e0c1007b863e22d003ee232ec172b144796b076"
   },
   {
     "path": "tables/class_distribution.csv",
