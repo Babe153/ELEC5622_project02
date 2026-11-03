@@ -89,7 +89,7 @@ GitHub 不包含图片、标签 CSV、权重二进制、论文 PDF和运行结�
 .\run.ps1 -Action test
 ```
 
-可用 `-Experiment 实验名称`、`-Config 配置文件路径`、`-RunDir 结果目录` 指定实验参数。启动器按顺序选择 Python：`-PythonExe` 参数、`PROJECT02_PYTHON` 环境变量、项目 `.venv`、此前已安装的本机 GPU 环境、系统 `python`。脚本含现有本机环境的回退路径，其他电脑可使用 `.venv` 或显式指定 Python。不会创建 environment 文件夹，也不会自动安装依赖。
+可用 `-Experiment 实验名称`、`-Config 配置文件路径`、`-RunDir 结果目录` 指定实验参数。启动器默认使用项目内的 `.venv/Scripts/python.exe`，不读取其他环境路径、不自动回退到系统 Python。如果确需使用其他环境，可以通过 `-PythonExe` 显式指定。不会创建 environment 文件夹，也不会自动安装依赖。
 
 训练窗口需保持打开。已有同名实验目录时程序拒绝覆盖；当前代码不支持精确断点续训。测试不会在训练结束后自动执行。
 
@@ -154,9 +154,9 @@ python train.py test --run-dir results/baseline_30epochs
 
 ## 环境和空间
 
-直接运行 Python 时，环境由终端或 IDE 选择。PowerShell 启动脚本包含本机现有 GPU 环境的回退位置，也支持项目 `.venv`。启动器不会自动让系统默认的 `python` 具备 PyTorch。
+本机项目已配置独立的 `.venv`，`run.ps1` 默认调用其中的 Python。它不依赖其他项目或聊天工作目录。直接使用 `python` 命令时，仍需在终端或 IDE 选择该环境，也可以始终使用 `.\.venv\Scripts\python.exe`。
 
-如果已有兼容的 GPU Python 环境，选择它后直接执行上面的命令即可。若需要新建项目环境，可以在项目根目录执行（本次整理没有执行安装）：
+本机无需重新安装。GitHub 不包含 `.venv`；克隆项目到新电脑后，在项目根目录执行以下命令重建环境。虚拟环境不应直接复制到其他电脑：
 
 ```powershell
 py -3.10 -m venv .venv
