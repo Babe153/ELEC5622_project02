@@ -229,3 +229,14 @@ v1（每轮重启 worker）的检查点首次升级需显式指定 `-UpgradeLoad
 ## 报告写作交接
 
 60轮实验及最终测试已完成。队友可直接从 [report/README.md](report/README.md) 开始阅读；[详细大纲](report/REPORT_OUTLINE_ZH.md) 包含作业要求、逐节写法、图表和实际数据；[Codex执行说明](report/CODEX_REPORT_TASK.md) 可直接交给写作助手。`report/` 是可提交Git的轻量证据副本，原始 `results/` 仍保持本地、不上传模型检查点。
+
+## 额外100轮续训准备
+
+独立续训副本、空间计算、暂停状态和将来的启动命令见 [docs/100epoch_extension.md](docs/100epoch_extension.md)。准备工具 `scripts/prepare_extension.py` 默认只检查空间；只有 `--prepare` 才复制完整状态，任何模式都不会训练。
+
+
+## 100轮补充实验结果
+
+独立续训至100轮已完成，未再次运行测试集。保留原60轮最终测试结果，新增 [60→100轮验证对照](report/tables/60_vs_100_comparison.md) 和 [100轮实验记录/曲线](report/experiments/baseline_100epochs)。大纲与Codex执行说明已同步加入这一补充分析。
+
+仅导出已保存结果（不训练、不测试）：`python scripts/export_extension_results.py --run-dir <100轮实验目录>`。

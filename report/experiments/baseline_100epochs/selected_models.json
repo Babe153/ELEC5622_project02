@@ -1,0 +1,94 @@
+{
+  "alexnet_partial": {
+    "model": "alexnet",
+    "strategy": "partial",
+    "learning_rate": 0.001,
+    "best_epoch": 85,
+    "val_accuracy": 0.9650574712643678,
+    "val_loss": 0.11491541369207973,
+    "trainable_parameters": 54558726,
+    "trial_id": "lr_0.001",
+    "classes": [
+      "Centromere",
+      "Golgi",
+      "Homogeneous",
+      "NuMem",
+      "Nucleolar",
+      "Speckled"
+    ],
+    "training_seconds_to_best": 1401.598054200018,
+    "selected_trial_training_seconds": 1643.1625837000174,
+    "selected_trial_validation_seconds": 208.48076880001463,
+    "selected_trial_status": "completed",
+    "group_tuning_wall_seconds": 5991.111973899999
+  },
+  "alexnet_full": {
+    "model": "alexnet",
+    "strategy": "full",
+    "learning_rate": 0.001,
+    "best_epoch": 81,
+    "val_accuracy": 0.9811494252873563,
+    "val_loss": 0.06806115161413434,
+    "trainable_parameters": 57028422,
+    "trial_id": "lr_0.001",
+    "classes": [
+      "Centromere",
+      "Golgi",
+      "Homogeneous",
+      "NuMem",
+      "Nucleolar",
+      "Speckled"
+    ],
+    "training_seconds_to_best": 1673.806962600036,
+    "selected_trial_training_seconds": 2048.8583664000616,
+    "selected_trial_validation_seconds": 204.57553970004665,
+    "selected_trial_status": "completed",
+    "group_tuning_wall_seconds": 4733.881587199998
+  },
+  "resnet34_partial": {
+    "model": "resnet34",
+    "strategy": "partial",
+    "learning_rate": 0.001,
+    "best_epoch": 83,
+    "val_accuracy": 0.9774712643678161,
+    "val_loss": 0.0922504153196839,
+    "trainable_parameters": 13117446,
+    "trial_id": "lr_0.001",
+    "classes": [
+      "Centromere",
+      "Golgi",
+      "Homogeneous",
+      "NuMem",
+      "Nucleolar",
+      "Speckled"
+    ],
+    "training_seconds_to_best": 1516.6001182999753,
+    "selected_trial_training_seconds": 1808.6382018999866,
+    "selected_trial_validation_seconds": 324.1597527999693,
+    "selected_trial_status": "completed",
+    "group_tuning_wall_seconds": 6519.514427200018
+  },
+  "resnet34_full": {
+    "model": "resnet34",
+    "strategy": "full",
+    "learning_rate": 0.001,
+    "best_epoch": 50,
+    "val_accuracy": 0.9908045977011494,
+    "val_loss": 0.05393182162580819,
+    "trainable_parameters": 21287750,
+    "trial_id": "lr_0.001",
+    "classes": [
+      "Centromere",
+      "Golgi",
+      "Homogeneous",
+      "NuMem",
+      "Nucleolar",
+      "Speckled"
+    ],
+    "training_seconds_to_best": 2023.4955463000224,
+    "selected_trial_training_seconds": 3864.696050399958,
+    "selected_trial_validation_seconds": 335.8151338000607,
+    "selected_trial_status": "completed",
+    "group_tuning_wall_seconds": 12543.130148799988
+  }
+}

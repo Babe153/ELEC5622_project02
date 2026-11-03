@@ -1,0 +1,23 @@
+{
+  "model": "alexnet",
+  "strategy": "partial",
+  "learning_rate": 0.001,
+  "best_epoch": 85,
+  "val_accuracy": 0.9650574712643678,
+  "val_loss": 0.11491541369207973,
+  "trainable_parameters": 54558726,
+  "trial_id": "lr_0.001",
+  "classes": [
+    "Centromere",
+    "Golgi",
+    "Homogeneous",
+    "NuMem",
+    "Nucleolar",
+    "Speckled"
+  ],
+  "training_seconds_to_best": 1401.598054200018,
+  "selected_trial_training_seconds": 1643.1625837000174,
+  "selected_trial_validation_seconds": 208.48076880001463,
+  "selected_trial_status": "completed",
+  "group_tuning_wall_seconds": 5991.111973899999
+}
