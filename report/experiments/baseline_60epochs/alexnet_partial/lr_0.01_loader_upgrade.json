@@ -1,0 +1,5 @@
+{
+  "last_legacy_epoch": 7,
+  "first_new_epoch": 8,
+  "weights_optimizer_scaler_preserved": true
+}

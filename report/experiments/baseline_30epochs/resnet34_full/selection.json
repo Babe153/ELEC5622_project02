@@ -1,0 +1,23 @@
+{
+  "model": "resnet34",
+  "strategy": "full",
+  "learning_rate": 0.001,
+  "best_epoch": 28,
+  "val_accuracy": 0.9885057471264368,
+  "val_loss": 0.048230327737742454,
+  "trainable_parameters": 21287750,
+  "trial_id": "lr_0.001",
+  "classes": [
+    "Centromere",
+    "Golgi",
+    "Homogeneous",
+    "NuMem",
+    "Nucleolar",
+    "Speckled"
+  ],
+  "training_seconds_to_best": 1081.0128179000021,
+  "selected_trial_training_seconds": 1155.5975222999987,
+  "selected_trial_validation_seconds": 104.57511679997697,
+  "selected_trial_status": "completed",
+  "group_tuning_wall_seconds": 3777.1865699000045
+}

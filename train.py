@@ -12,6 +12,7 @@ import math
 import os
 import platform
 import random
+import shutil
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,7 +23,7 @@ import torch
 import torchvision
 from PIL import Image
 from torch import nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Sampler
 from torchvision import models, transforms
 
 ROOT = Path(__file__).resolve().parent
@@ -42,10 +43,14 @@ def write_json(path, value):
 def write_csv(path, rows):
     if not rows:
         return
-    with Path(path).open("w", newline="", encoding="utf-8-sig") as f:
+    path = Path(path)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    with temporary.open("w", newline="", encoding="utf-8-sig") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
+    os.replace(temporary, path)
+
 
 
 def resolve(config, key):
@@ -94,23 +99,44 @@ def load_index(cfg):
 class Cells(Dataset):
     def __init__(self, files, labels, cfg, training=False):
         self.files, self.labels = files, labels
-        ops = [transforms.Resize((cfg["image_size"], cfg["image_size"]),
-                                 interpolation=transforms.InterpolationMode.BILINEAR)]
-        if training:
-            # One random variant per original image per epoch; no 10/40x expansion.
-            ops.append(transforms.RandomRotation(cfg["rotation_degrees"],
-                       interpolation=transforms.InterpolationMode.BILINEAR, fill=0))
-        ops += [transforms.ToTensor(), transforms.Normalize(MEAN, STD)]
-        self.transform = transforms.Compose(ops)
+        self.training, self.seed = training, cfg["seed"]
+        self.degrees = cfg["rotation_degrees"]
+        self.resize = transforms.Resize((cfg["image_size"], cfg["image_size"]),
+                                       interpolation=transforms.InterpolationMode.BILINEAR)
+        self.finish = transforms.Compose([transforms.ToTensor(), transforms.Normalize(MEAN, STD)])
 
     def __len__(self):
         return len(self.files)
 
-    def __getitem__(self, index):
+    def __getitem__(self, key):
+        # Epoch travels with each index, so prefetch never sees a stale shared epoch.
+        epoch, index = key if isinstance(key, tuple) else (0, key)
         path = self.files[index]
         with Image.open(path) as image:
-            x = self.transform(image.convert("RGB"))
+            image = self.resize(image.convert("RGB"))
+            if self.training:
+                # Local RNG: independent of worker lifetime, scheduling and global dropout RNG.
+                token = f"{self.seed}:{epoch}:{path.stem}".encode("utf-8")
+                sample_seed = int.from_bytes(hashlib.blake2b(token, digest_size=8).digest(), "little")
+                angle = random.Random(sample_seed).uniform(-self.degrees, self.degrees)
+                image = transforms.functional.rotate(image, angle,
+                    interpolation=transforms.InterpolationMode.BILINEAR, fill=0)
+            x = self.finish(image)
         return x, self.labels[int(path.stem)]
+
+
+class EpochSampler(Sampler):
+    """Separate shuffle RNG from worker seed RNG; checkpoint its state each epoch."""
+    def __init__(self, size, seed):
+        self.size, self.epoch = size, 1
+        self.generator = torch.Generator().manual_seed(seed)
+
+    def __len__(self):
+        return self.size
+
+    def __iter__(self):
+        order = torch.randperm(self.size, generator=self.generator).tolist()
+        return iter((self.epoch, index) for index in order)
 
 
 def seed_all(seed):
@@ -131,8 +157,9 @@ def seed_worker(worker_id):
 
 def loader(files, labels, cfg, device, training=False):
     generator = torch.Generator().manual_seed(cfg["seed"])
+    sampler = EpochSampler(len(files), cfg["seed"]) if training else None
     return DataLoader(Cells(files, labels, cfg, training), batch_size=cfg["batch_size"],
-                      shuffle=training, num_workers=cfg["num_workers"],
+                      sampler=sampler, num_workers=cfg["num_workers"],
                       pin_memory=device.type == "cuda", worker_init_fn=seed_worker,
                       generator=generator, persistent_workers=cfg["num_workers"] > 0)
 
@@ -270,24 +297,124 @@ def check(cfg, device):
     print("CHECK PASSED. No optimizer steps or test predictions performed.", flush=True)
 
 
-def train(cfg, device, experiment):
+def atomic_save(path, payload):
+    path = Path(path)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    try:
+        torch.save(payload, temporary)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def rng_state():
+    # Plain Python values/tensors keep checkpoints compatible with weights_only=True.
+    ns = np.random.get_state()
+    return {"python": random.getstate(),
+            "numpy": (ns[0], ns[1].tolist(), ns[2], ns[3], ns[4]),
+            "torch": torch.get_rng_state(),
+            "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []}
+
+
+def restore_rng(state):
+    random.setstate(state["python"])
+    ns = state["numpy"]
+    np.random.set_state((ns[0], np.asarray(ns[1], dtype=np.uint32), ns[2], ns[3], ns[4]))
+    torch.set_rng_state(state["torch"])
+    if state["cuda"]:
+        torch.cuda.set_rng_state_all(state["cuda"])
+
+
+def check_space(run, cfg):
+    # FP32 model + SGD momentum for trainable weights, all trial checkpoints,
+    # four best models, one atomic replacement, and a 512 MiB reserve.
+    counts = {("alexnet", "partial"): (57028422, 54558726),
+              ("alexnet", "full"): (57028422, 57028422),
+              ("resnet34", "partial"): (21287750, 13117446),
+              ("resnet34", "full"): (21287750, 21287750)}
+    sizes = [4 * sum(counts[(m, st)]) for m in cfg["models"] for st in cfg["strategies"]]
+    total = sum(sizes) * len(cfg["learning_rates"])
+    total += sum(4 * counts[(m, st)][0] for m in cfg["models"] for st in cfg["strategies"])
+    total += max(sizes) + 512 * 1024**2
+    existing = sum(p.stat().st_size for m in cfg["models"] for st in cfg["strategies"]
+                   for p in (run / f"{m}_{st}").glob("*.pt")) if run.exists() else 0
+    parent = run
+    while not parent.exists():
+        parent = parent.parent
+    needed = max(0, total - existing)
+    free = shutil.disk_usage(parent).free
+    if free < needed:
+        raise OSError(f"Insufficient checkpoint space: need about {needed / 1024**3:.2f} GiB free, "
+                      f"have {free / 1024**3:.2f} GiB. Free space or change results_dir; no training started.")
+
+
+def train(cfg, device, experiment=None, resume_run=None, target_epochs=None, upgrade_loader=False):
+    resuming = resume_run is not None
+    run = Path(resume_run).resolve() if resuming else resolve(cfg, "results_dir") / experiment
+    if resuming:
+        cfg = read_config(run / "config.json")
+        if not (run / "resume_format.json").exists():
+            raise ValueError("This legacy experiment has no complete resume checkpoints; start a new experiment.")
+        manifest = json.loads((run / "resume_format.json").read_text(encoding="utf-8"))
+        if manifest.get("version") not in (1, 2):
+            raise ValueError("Unsupported resume format")
+        if manifest["version"] == 1 and not upgrade_loader:
+            raise ValueError("Loader v1 requires explicit --upgrade-loader; future rotation/shuffle sequence will change")
+        if manifest.get("config") != {k: v for k, v in cfg.items() if k != "epochs"}:
+            raise ValueError("Saved experiment settings changed; resume only allows a larger epoch budget")
+        if (run / "test_results.json").exists():
+            raise ValueError("Cannot resume an experiment after test evaluation.")
+        if target_epochs is not None:
+            if target_epochs < cfg["epochs"]:
+                raise ValueError("--epochs cannot decrease the saved training budget")
+            cfg = {**cfg, "epochs": target_epochs}
+    check_space(run, cfg)
     classes, labels, splits = load_index(cfg)
     hashes = verify_weights(cfg)
-    run = resolve(cfg, "results_dir") / experiment
-    # Never silently overwrite an earlier experiment.
-    run.mkdir(parents=True, exist_ok=False)
+    current_env = environment(device)
+    if resuming:
+        saved_env = json.loads((run / "environment.json").read_text(encoding="utf-8"))
+        if saved_env != current_env:
+            raise ValueError("Resume requires the same Python/PyTorch/CUDA/device environment")
+        if hashes != json.loads((run / "weights.json").read_text(encoding="utf-8")):
+            raise ValueError("Pretrained weights changed")
+        if classes != json.loads((run / "classes.json").read_text(encoding="utf-8")):
+            raise ValueError("Class mapping changed")
+        if manifest["version"] == 1:
+            write_json(run / "loader_upgrade.json", {
+                "upgraded_utc": datetime.now(timezone.utc).isoformat(),
+                "from": 1, "to": 2, "reason": "Persistent workers with deterministic per-image augmentation",
+                "preserved": "model, optimizer, scaler, global RNG, history; shuffle RNG seeded from saved loader RNG",
+                "random_sequence_changes": True})
+            manifest.update(version=2, persistent_workers=True, allow_v1_checkpoint_migration=True,
+                            augmentation="seed_epoch_image_blake2b", sampler="separate_epoch_sampler")
+            write_json(run / "resume_format.json", manifest)
+    else:
+        manifest = {"allow_v1_checkpoint_migration": False}
+        run.mkdir(parents=True, exist_ok=False)
+        write_json(run / "environment.json", current_env)
+        write_json(run / "weights.json", hashes)
+        write_json(run / "classes.json", classes)
+        write_json(run / "resume_format.json", {"version": 2, "boundary": "completed_epoch", "persistent_workers": True,
+                                                      "augmentation": "seed_epoch_image_blake2b", "sampler": "separate_epoch_sampler",
+                                                      "config": {k: v for k, v in cfg.items() if k != "epochs"}})
+    (run / "paused.json").unlink(missing_ok=True)
     write_json(run / "config.json", cfg)
-    write_json(run / "environment.json", environment(device))
-    write_json(run / "weights.json", hashes)
-    write_json(run / "classes.json", classes)
+    (run / "completed.json").unlink(missing_ok=True)
+    (run / "selected_models.json").unlink(missing_ok=True)
     amp = cfg["mixed_precision"] and device.type == "cuda"
     champions, summaries = {}, []
     for name in cfg["models"]:
         for strategy in cfg["strategies"]:
             group = f"{name}_{strategy}"
             group_dir = run / group
-            group_dir.mkdir()
+            group_dir.mkdir(exist_ok=True)
             champion_key = (-1, float("-inf"))
+            if (group_dir / "best.pt").exists():
+                previous = torch.load(group_dir / "best.pt", map_location="cpu", weights_only=True)
+                champions[group] = previous["metadata"]
+                champion_key = (champions[group]["val_accuracy"], -champions[group]["val_loss"])
+                del previous
             for lr in cfg["learning_rates"]:
                 seed_all(cfg["seed"])
                 model = build_model(name, strategy, cfg).to(device)
@@ -298,53 +425,108 @@ def train(cfg, device, experiment):
                 train_loader = loader(splits["training"], labels, cfg, device, True)
                 val_loader = loader(splits["validation"], labels, cfg, device)
                 trial_id = f"lr_{lr:g}"
-                history, best_key, best_epoch = [], (-1, float("-inf")), 0
-                trial_start = time.perf_counter()
-                status, reason = "completed", ""
-                for epoch in range(1, cfg["epochs"] + 1):
-                    try:
-                        tr = epoch_pass(model, train_loader, device, amp, optimizer, scaler)
-                        va = epoch_pass(model, val_loader, device, amp)
-                    except FloatingPointError as error:
-                        status, reason = "diverged", str(error)
-                        break
-                    row = {"epoch": epoch, "learning_rate": lr,
-                           "train_loss": tr["loss"], "train_accuracy": tr["accuracy"],
-                           "val_loss": va["loss"], "val_accuracy": va["accuracy"],
-                           "train_seconds": tr["seconds"], "validation_seconds": va["seconds"]}
-                    history.append(row)
+                checkpoint_path = group_dir / f"{trial_id}_last.pt"
+                history, elapsed, status, reason = [], 0.0, "completed", ""
+                if checkpoint_path.exists():
+                    cp = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+                    if cp["identity"] != [group, lr] or cp["version"] not in (1, 2):
+                        raise ValueError("Checkpoint identity/version mismatch")
+                    if cp["version"] == 1 and not manifest.get("allow_v1_checkpoint_migration", False):
+                        raise ValueError("Legacy checkpoint requires explicit loader migration")
+                    model.load_state_dict(cp["model_state"])
+                    optimizer.load_state_dict(cp["optimizer_state"])
+                    scaler.load_state_dict(cp["scaler_state"])
+                    train_loader.generator.set_state(cp["train_generator"])
+                    val_loader.generator.set_state(cp["val_generator"])
+                    train_loader.sampler.generator.set_state(cp.get("sampler_generator", cp["train_generator"]))
+                    history, elapsed = cp["history"], cp["elapsed_seconds"]
+                    if cp["version"] == 1:
+                        write_json(group_dir / f"{trial_id}_loader_upgrade.json", {
+                            "last_legacy_epoch": len(history), "first_new_epoch": len(history) + 1,
+                            "weights_optimizer_scaler_preserved": True})
+                    print(f"Resuming {group} lr={lr:g}: {len(history)} epochs saved; target {cfg['epochs']}.", flush=True)
+                    status, reason = cp["status"], cp["reason"]
+                    restore_rng(cp["rng"])
+                    del cp
+                # CSV may be ahead after an interrupted write; checkpoint is authoritative.
+                if history:
                     write_csv(group_dir / f"{trial_id}_history.csv", history)
-                    key = (va["accuracy"], -va["loss"])
-                    if key > best_key:
-                        best_key, best_epoch = key, epoch
+                trial_start = time.perf_counter()
+
+                def save_last():
+                    atomic_save(checkpoint_path, {
+                        "version": 2, "identity": [group, lr], "epoch": len(history),
+                        "model_state": model.state_dict(), "optimizer_state": optimizer.state_dict(),
+                        "scaler_state": scaler.state_dict(), "rng": rng_state(),
+                        "sampler_generator": train_loader.sampler.generator.get_state(),
+                        "train_generator": train_loader.generator.get_state(),
+                        "val_generator": val_loader.generator.get_state(),
+                        "history": history, "status": status, "reason": reason,
+                        "elapsed_seconds": elapsed + time.perf_counter() - trial_start})
+
+                def promote_last():
+                    nonlocal champion_key
+                    if not history:
+                        return
+                    row = history[-1]
+                    key = (row["val_accuracy"], -row["val_loss"])
                     if key > champion_key:
-                        champion_key = key
                         metadata = {"model": name, "strategy": strategy, "learning_rate": lr,
-                                    "best_epoch": epoch, "val_accuracy": va["accuracy"],
-                                    "val_loss": va["loss"], "trainable_parameters": trainable,
+                                    "best_epoch": row["epoch"], "val_accuracy": row["val_accuracy"],
+                                    "val_loss": row["val_loss"], "trainable_parameters": trainable,
                                     "trial_id": trial_id, "classes": classes,
                                     "training_seconds_to_best": sum(r["train_seconds"] for r in history)}
-                        payload = {"model_state": {k: v.detach().cpu() for k, v in model.state_dict().items()},
-                                   "metadata": metadata, "config": cfg}
-                        target = group_dir / "best.pt"
-                        temporary = target.with_suffix(".tmp")
-                        torch.save(payload, temporary)
-                        os.replace(temporary, target)
-                        champions[group] = metadata
+                        atomic_save(group_dir / "best.pt", {
+                            "model_state": {k: v.detach().cpu() for k, v in model.state_dict().items()},
+                            "metadata": metadata, "config": cfg})
+                        champions[group], champion_key = metadata, key
                         write_json(group_dir / "selection.json", metadata)
-                        del payload
-                    print(f"{group} lr={lr:g} epoch={epoch}/{cfg['epochs']} "
-                          f"train={tr['accuracy']:.4f} val={va['accuracy']:.4f} "
-                          f"time={tr['seconds'] + va['seconds']:.1f}s", flush=True)
+
+                if status != "diverged":
+                    # Repairs an interruption between saving last.pt and best.pt.
+                    promote_last()
+                    for epoch in range(len(history) + 1, cfg["epochs"] + 1):
+                        if (run / "pause.request").exists():
+                            write_json(run / "paused.json", {"group": group, "trial_id": trial_id,
+                                                             "saved_epoch": len(history)})
+                            print("Paused at a saved epoch boundary. Remove pause.request before resume.", flush=True)
+                            return
+                        train_loader.sampler.epoch = epoch
+                        try:
+                            tr = epoch_pass(model, train_loader, device, amp, optimizer, scaler)
+                            va = epoch_pass(model, val_loader, device, amp)
+                        except FloatingPointError as error:
+                            status, reason = "diverged", str(error)
+                            # Preserve the last valid boundary; terminal marker prevents retries.
+                            if checkpoint_path.exists():
+                                terminal = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+                                terminal.update(status=status, reason=reason,
+                                                elapsed_seconds=elapsed + time.perf_counter() - trial_start)
+                                atomic_save(checkpoint_path, terminal)
+                                del terminal
+                            else:
+                                save_last()
+                            break
+                        history.append({"epoch": epoch, "learning_rate": lr,
+                                        "train_loss": tr["loss"], "train_accuracy": tr["accuracy"],
+                                        "val_loss": va["loss"], "val_accuracy": va["accuracy"],
+                                        "train_seconds": tr["seconds"], "validation_seconds": va["seconds"]})
+                        save_last()
+                        write_csv(group_dir / f"{trial_id}_history.csv", history)
+                        promote_last()
+                        print(f"{group} lr={lr:g} epoch={epoch}/{cfg['epochs']} "
+                              f"train={tr['accuracy']:.4f} val={va['accuracy']:.4f} "
+                              f"time={tr['seconds'] + va['seconds']:.1f}s", flush=True)
+                best = max(history, key=lambda r: (r["val_accuracy"], -r["val_loss"])) if history else None
                 summary = {"group": group, "trial_id": trial_id, "learning_rate": lr,
                            "epochs_completed": len(history), "status": status, "reason": reason,
-                           "best_epoch": best_epoch,
-                           "best_val_accuracy": best_key[0] if history else None,
-                           "best_val_loss": -best_key[1] if history else None,
+                           "best_epoch": best["epoch"] if best else 0,
+                           "best_val_accuracy": best["val_accuracy"] if best else None,
+                           "best_val_loss": best["val_loss"] if best else None,
                            "trainable_parameters": trainable,
                            "training_seconds": sum(r["train_seconds"] for r in history),
                            "validation_seconds": sum(r["validation_seconds"] for r in history),
-                           "trial_wall_seconds": time.perf_counter() - trial_start}
+                           "trial_wall_seconds": elapsed + time.perf_counter() - trial_start}
                 summaries.append(summary)
                 write_csv(run / "trials.csv", summaries)
                 write_json(run / "trials.json", summaries)
@@ -424,18 +606,28 @@ def test(run, device):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["check", "train", "test"])
+    parser.add_argument("command", choices=["check", "train", "resume", "test"])
     parser.add_argument("--config", type=Path, default=ROOT / "config.json")
     parser.add_argument("--device", choices=["cuda", "cpu"], default="cuda")
-    parser.add_argument("--experiment", default="baseline_30epochs")
-    parser.add_argument("--run-dir", type=Path, help="Existing experiment directory for test")
+    parser.add_argument("--experiment", default="baseline_60epochs")
+    parser.add_argument("--run-dir", type=Path, help="Existing experiment directory for resume/test")
+    parser.add_argument("--upgrade-loader", action="store_true", help="Explicitly migrate v1 checkpoints to persistent loader v2")
+    parser.add_argument("--epochs", type=int, help="Total target epochs for resume (not additional epochs)")
     args = parser.parse_args()
+    if args.upgrade_loader and args.command != "resume":
+        parser.error("--upgrade-loader is only valid with resume")
+    if args.epochs is not None and args.command != "resume":
+        parser.error("--epochs is only valid with resume; new training uses config.json")
     if args.device == "cuda" and not torch.cuda.is_available():
         parser.error("CUDA unavailable. Use the installed GPU environment; CPU use must be explicit.")
     if Path(args.experiment).name != args.experiment or args.experiment in {".", ".."}:
         parser.error("--experiment must be a simple folder name")
     device = torch.device(args.device)
-    if args.command == "test":
+    if args.command == "resume":
+        if args.run_dir is None:
+            parser.error("resume requires --run-dir")
+        train(None, device, resume_run=args.run_dir, target_epochs=args.epochs, upgrade_loader=args.upgrade_loader)
+    elif args.command == "test":
         if args.run_dir is None:
             parser.error("test requires --run-dir")
         test(args.run_dir, device)

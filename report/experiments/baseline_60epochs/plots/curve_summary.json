@@ -1,0 +1,281 @@
+[
+  {
+    "group": "alexnet_partial",
+    "lr": 0.01,
+    "best_epoch": 20,
+    "best_val_pct": 87.40229885057471,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.2689655172413793,
+    "val_acc_mean_last": 0.23577011494252872,
+    "val_loss_mean_previous": 1.6159322467672415,
+    "val_loss_mean_last": 1.6805880926724135
+  },
+  {
+    "group": "alexnet_partial",
+    "lr": 0.001,
+    "best_epoch": 43,
+    "best_val_pct": 95.9080459770115,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.9558620689655173,
+    "val_acc_mean_last": 0.9540229885057471,
+    "val_loss_mean_previous": 0.13403142679148708,
+    "val_loss_mean_last": 0.1376024829382184
+  },
+  {
+    "group": "alexnet_partial",
+    "lr": 0.0001,
+    "best_epoch": 58,
+    "best_val_pct": 93.42528735632185,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.9298390804597702,
+    "val_acc_mean_last": 0.9299310344827585,
+    "val_loss_mean_previous": 0.20517817775682473,
+    "val_loss_mean_last": 0.20271586521192528
+  },
+  {
+    "group": "alexnet_full",
+    "lr": 0.01,
+    "best_epoch": 2,
+    "best_val_pct": 20.96551724137931,
+    "previous_window_epochs": [],
+    "last_window_epochs": [
+      1,
+      2
+    ],
+    "val_acc_mean_previous": null,
+    "val_acc_mean_last": 0.1954022988505747,
+    "val_loss_mean_previous": null,
+    "val_loss_mean_last": 1.7341285021551724
+  },
+  {
+    "group": "alexnet_full",
+    "lr": 0.001,
+    "best_epoch": 44,
+    "best_val_pct": 97.79310344827586,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.9715862068965517,
+    "val_acc_mean_last": 0.9712183908045977,
+    "val_loss_mean_previous": 0.09285335426769037,
+    "val_loss_mean_last": 0.09393660902702947
+  },
+  {
+    "group": "alexnet_full",
+    "lr": 0.0001,
+    "best_epoch": 56,
+    "best_val_pct": 97.70114942528735,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.9713103448275862,
+    "val_acc_mean_last": 0.9731494252873564,
+    "val_loss_mean_previous": 0.08985877587329383,
+    "val_loss_mean_last": 0.08255907782192888
+  },
+  {
+    "group": "resnet34_partial",
+    "lr": 0.01,
+    "best_epoch": 36,
+    "best_val_pct": 97.28735632183908,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.9579770114942529,
+    "val_acc_mean_last": 0.9661609195402299,
+    "val_loss_mean_previous": 0.1309440637347342,
+    "val_loss_mean_last": 0.11239406261224856
+  },
+  {
+    "group": "resnet34_partial",
+    "lr": 0.001,
+    "best_epoch": 51,
+    "best_val_pct": 97.51724137931035,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.9651494252873564,
+    "val_acc_mean_last": 0.9655172413793103,
+    "val_loss_mean_previous": 0.12066545578529095,
+    "val_loss_mean_last": 0.11366656143363865
+  },
+  {
+    "group": "resnet34_partial",
+    "lr": 0.0001,
+    "best_epoch": 51,
+    "best_val_pct": 96.0919540229885,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.957977011494253,
+    "val_acc_mean_last": 0.9539310344827587,
+    "val_loss_mean_previous": 0.1375317944055316,
+    "val_loss_mean_last": 0.13782460039511496
+  },
+  {
+    "group": "resnet34_full",
+    "lr": 0.01,
+    "best_epoch": 42,
+    "best_val_pct": 97.83908045977012,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.9578850574712643,
+    "val_acc_mean_last": 0.9638620689655173,
+    "val_loss_mean_previous": 0.11909082171560706,
+    "val_loss_mean_last": 0.10865408360272988
+  },
+  {
+    "group": "resnet34_full",
+    "lr": 0.001,
+    "best_epoch": 50,
+    "best_val_pct": 99.08045977011494,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.9831724137931035,
+    "val_acc_mean_last": 0.983448275862069,
+    "val_loss_mean_previous": 0.06389864936916308,
+    "val_loss_mean_last": 0.06326188151041667
+  },
+  {
+    "group": "resnet34_full",
+    "lr": 0.0001,
+    "best_epoch": 59,
+    "best_val_pct": 98.25287356321839,
+    "previous_window_epochs": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "last_window_epochs": [
+      56,
+      57,
+      58,
+      59,
+      60
+    ],
+    "val_acc_mean_previous": 0.9785747126436781,
+    "val_acc_mean_last": 0.9813333333333333,
+    "val_loss_mean_previous": 0.06619376557448815,
+    "val_loss_mean_last": 0.05849956573837105
+  }
+]

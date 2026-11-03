@@ -1,9 +1,11 @@
-﻿param(
-    [ValidateSet('check','train','test')][string]$Action = 'check',
-    [string]$Experiment = 'baseline_30epochs',
+param(
+    [ValidateSet('check','train','resume','test')][string]$Action = 'check',
+    [string]$Experiment = 'baseline_60epochs',
     [string]$Config = '',
     [string]$RunDir = '',
-    [string]$PythonExe = ''
+    [string]$PythonExe = '',
+    [int]$Epochs = 0,
+    [switch]$UpgradeLoader
 )
 $ErrorActionPreference = 'Stop'
 if (-not $PythonExe) {
@@ -15,7 +17,7 @@ if (-not (Test-Path -LiteralPath $PythonExe)) {
 if (-not $Config) { $Config = Join-Path $PSScriptRoot 'config.json' }
 $arguments = @('-u', (Join-Path $PSScriptRoot 'train.py'), $Action, '--config', $Config)
 if ($Action -eq 'train') { $arguments += @('--experiment', $Experiment) }
-if ($Action -eq 'test') {
+if ($Action -in @('test', 'resume')) {
     if (-not $RunDir) {
         $settings = Get-Content -LiteralPath $Config -Raw | ConvertFrom-Json
         $resultsPath = $settings.results_dir
@@ -24,5 +26,10 @@ if ($Action -eq 'test') {
     }
     $arguments += @('--run-dir', $RunDir)
 }
+if ($Epochs -ne 0) {
+    if ($Action -ne 'resume') { throw '-Epochs is only valid with -Action resume' }
+    $arguments += @('--epochs', $Epochs)
+}
+if ($UpgradeLoader) { $arguments += '--upgrade-loader' }
 & $PythonExe @arguments
 if ($LASTEXITCODE -ne 0) { throw "Command failed with exit code $LASTEXITCODE" }

@@ -1,0 +1,8 @@
+{
+  "upgraded_utc": "2026-11-03T07:42:37.825992+00:00",
+  "from": 1,
+  "to": 2,
+  "reason": "Persistent workers with deterministic per-image augmentation",
+  "preserved": "model, optimizer, scaler, global RNG, history; shuffle RNG seeded from saved loader RNG",
+  "random_sequence_changes": true
+}

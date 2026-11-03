@@ -1,0 +1,46 @@
+[
+  {
+    "configuration": "alexnet_partial",
+    "test_accuracy": 0.9404411764705882,
+    "learning_rate": 0.001,
+    "best_epoch": 43,
+    "trainable_parameters": 54558726,
+    "training_seconds_to_best": 712.3560871000373,
+    "selected_trial_training_seconds": 993.9465755000274,
+    "group_tuning_wall_seconds": 3674.53904209999,
+    "test_seconds": 22.93911229999503
+  },
+  {
+    "configuration": "alexnet_full",
+    "test_accuracy": 0.9661764705882353,
+    "learning_rate": 0.001,
+    "best_epoch": 44,
+    "trainable_parameters": 57028422,
+    "training_seconds_to_best": 919.6835415000241,
+    "selected_trial_training_seconds": 1246.4577461000736,
+    "group_tuning_wall_seconds": 2914.4133229000145,
+    "test_seconds": 2.341567600000417
+  },
+  {
+    "configuration": "resnet34_partial",
+    "test_accuracy": 0.9647058823529412,
+    "learning_rate": 0.001,
+    "best_epoch": 51,
+    "trainable_parameters": 13117446,
+    "training_seconds_to_best": 945.6662331999978,
+    "selected_trial_training_seconds": 1110.3369050000038,
+    "group_tuning_wall_seconds": 4023.9292559000023,
+    "test_seconds": 3.975418499991065
+  },
+  {
+    "configuration": "resnet34_full",
+    "test_accuracy": 0.9830882352941176,
+    "learning_rate": 0.001,
+    "best_epoch": 50,
+    "trainable_parameters": 21287750,
+    "training_seconds_to_best": 2023.4955463000224,
+    "selected_trial_training_seconds": 2424.0805347000132,
+    "group_tuning_wall_seconds": 7815.360705899991,
+    "test_seconds": 4.033120799998869
+  }
+]

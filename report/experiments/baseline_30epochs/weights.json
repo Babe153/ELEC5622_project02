@@ -1,0 +1,12 @@
+[
+  {
+    "model": "alexnet",
+    "file": "alexnet-owt-7be5be79.pth",
+    "sha256": "7be5be791159472b1fbf3c69796f7cb30dca7ad8466c2df70058c37116cdee02"
+  },
+  {
+    "model": "resnet34",
+    "file": "resnet34-b627a593.pth",
+    "sha256": "b627a593bcbe140c234610266fe4f8ae95ea42fc881d091c9b6052e6b1d0590f"
+  }
+]

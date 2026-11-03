@@ -16,7 +16,7 @@
     0.001,
     0.0001
   ],
-  "epochs": 30,
+  "epochs": 60,
   "batch_size": 16,
   "num_workers": 2,
   "seed": 42,

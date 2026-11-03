@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "boundary": "completed_epoch",
+  "persistent_workers": true,
+  "config": {
+    "data_dir": "datasets",
+    "labels_csv": "datasets/gt_training.csv",
+    "weights_dir": "weights",
+    "results_dir": "results",
+    "models": [
+      "alexnet",
+      "resnet34"
+    ],
+    "strategies": [
+      "partial",
+      "full"
+    ],
+    "learning_rates": [
+      0.01,
+      0.001,
+      0.0001
+    ],
+    "batch_size": 16,
+    "num_workers": 2,
+    "seed": 42,
+    "momentum": 0.9,
+    "weight_decay": 0.0005,
+    "image_size": 224,
+    "rotation_degrees": 180,
+    "mixed_precision": true,
+    "expected_counts": {
+      "training": 8701,
+      "validation": 2175,
+      "test": 2720
+    }
+  },
+  "allow_v1_checkpoint_migration": true,
+  "augmentation": "seed_epoch_image_blake2b",
+  "sampler": "separate_epoch_sampler"
+}
